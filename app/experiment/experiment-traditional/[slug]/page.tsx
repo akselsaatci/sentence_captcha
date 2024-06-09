@@ -33,7 +33,7 @@ export default function Experiment({ params }: { params: { slug: string } }) {
         const accuracy = formData.get('accuracy')
         if (!captchaText) return
 
-        if(captchaText !== captcha) {
+        if (captchaText !== captcha) {
             return
         }
 
@@ -59,20 +59,16 @@ export default function Experiment({ params }: { params: { slug: string } }) {
         cookieStorage.set({
             name: 'experiment',
             value: JSON.stringify(newExperimentData),
-            options: {
-                maxAge: 365 * 24 * 60 * 60,
-                path: '/',
-            },
         })
         revalidatePath('/experiment/experiment-list')
-        redirect('/experiment/experiment-list' )
+        redirect('/experiment/experiment-list')
 
     }
 
 
     return (
         <div className="flex items-center justify-center h-screen">
-            <CaptchaForm captcha={captcha} handleSubmit={handleSubmit} />
+            <CaptchaForm captcha={captcha} isTraditional={true} handleSubmit={handleSubmit} />
         </div>
 
     )

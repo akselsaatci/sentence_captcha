@@ -135,10 +135,6 @@ export default function Home() {
         cookieStore.set({
             name: 'experiment',
             value: JSON.stringify(experiment),
-            options: {
-                maxAge: 365 * 24 * 60 * 60, // 365 days in seconds
-                path: '/',
-            },
         });
         return redirect('/experiment/experiment-list')
 

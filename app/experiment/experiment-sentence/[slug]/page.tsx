@@ -40,10 +40,6 @@ export default function Experiment({ params }: { params: { slug: string } }) {
         }
 
 
-        console.log(captchaText, time)
-        console.log(name)
-        console.log(accuracy)
-
         const newExperimentData = {
             ...experimentData,
             experiments: experimentData.experiments.map((experiment, i) => {
@@ -61,10 +57,6 @@ export default function Experiment({ params }: { params: { slug: string } }) {
         cookieStorage.set({
             name: 'experiment',
             value: JSON.stringify(newExperimentData),
-            options: {
-                maxAge: 365 * 24 * 60 * 60,
-                path: '/',
-            },
         })
         revalidatePath('/experiment/experiment-list')
         redirect('/experiment/experiment-list')
@@ -74,7 +66,7 @@ export default function Experiment({ params }: { params: { slug: string } }) {
 
     return (
         <div className="flex items-center justify-center h-screen">
-            <CaptchaForm captcha={captcha} handleSubmit={handleSubmit} />
+            <CaptchaForm captcha={captcha} isTraditional={false} handleSubmit={handleSubmit} />
         </div>
 
     )
