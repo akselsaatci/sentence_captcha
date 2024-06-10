@@ -31,12 +31,11 @@ export default function Experiment({ params }: { params: { slug: string } }) {
         const cookieStorage = cookies()
         const cookie = cookieStorage.get('experiment')
         const experimentData: ExperimentData = cookie ? JSON.parse(cookie.value) : null
-        const name = experimentData.userName
         const accuracy = formData.get('accuracy')
         if (!captchaText) return
 
-        if (!isCaptchaValid(captchaText.toString(), captcha) && grammerCheck(captchaText.toString())) {
-            return
+        if (!isCaptchaValid(captchaText.toString(), captcha) || await grammerCheck(captchaText.toString()) == false) {
+            redirect(`/experiment/experiment-sentence/${index}?err=invalid-captcha`)
         }
 
 

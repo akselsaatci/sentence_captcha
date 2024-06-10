@@ -4,10 +4,23 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import CaptchaImage from '@/components/CaptchaImage';
 import { Button } from "@/components/ui/button"
 import { Input } from './ui/input';
+import { useSearchParams } from 'next/navigation';
+import {
+    Alert,
+    AlertDescription,
+    AlertTitle,
+} from "@/components/ui/alert"
 
 export default function CaptchaForm({ captcha, handleSubmit, isTraditional }: { captcha: string, handleSubmit: (formData: FormData) => void, isTraditional: boolean }) {
     const [time, setTime] = useState<number>(0);
     const [isRunning, setIsRunning] = useState<boolean>(false);
+    const [backspaceCount, setBackspaceCount] = useState(0);
+    const [totalKeystrokes, setTotalKeystrokes] = useState(0);
+    const [accuracy, setAccuracy] = useState(100);
+
+    const searchParams = useSearchParams()
+
+    const errorMessage = searchParams.get('err')
 
     useEffect(() => {
         let intervalId: any;
@@ -20,9 +33,6 @@ export default function CaptchaForm({ captcha, handleSubmit, isTraditional }: { 
         return () => clearInterval(intervalId);
     }, [isRunning, time]);
 
-    const [backspaceCount, setBackspaceCount] = useState(0);
-    const [totalKeystrokes, setTotalKeystrokes] = useState(0);
-    const [accuracy, setAccuracy] = useState(100);
 
     const calculateAccuracy = useCallback(() => {
         console.log(totalKeystrokes, backspaceCount);
@@ -48,6 +58,7 @@ export default function CaptchaForm({ captcha, handleSubmit, isTraditional }: { 
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [calculateAccuracy]);
+
     const traditionalCaptchaText = "Enter the text shown in the image";
     const sentencecaptchaText = "Write a complete sentence containing all the words shown in the image";
 
@@ -66,6 +77,14 @@ export default function CaptchaForm({ captcha, handleSubmit, isTraditional }: { 
                         <Input type="text" name="captchaText" placeholder="Enter captcha text" required />
                     </div>
                 </CardContent>
+                {errorMessage && <div className='p-6'> <Alert variant="destructive">
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>
+                        {errorMessage === 'invalid-captcha' ? 'Invalid Captcha' : 'An error occurred'}
+                    </AlertDescription>
+                </Alert>
+                </div>
+                }
                 <CardFooter>
                     <Button type="submit" className="w-full">Submit</Button>
                 </CardFooter>

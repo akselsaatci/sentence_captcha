@@ -15,7 +15,7 @@ export default async function ExperimentList() {
 
     }
     return (
-        <div className="flex items-center justify-center h-screen" >
+        <div className="flex px-3 lg:px-0 items-center justify-center h-screen" >
             <div className="w-full max-w-md text-center">
                 <h1 className="text-2xl font-bold mb-4">Experiments</h1>
                 <ul className="space-y-4">
@@ -29,9 +29,19 @@ export default async function ExperimentList() {
                         </li>
                     ))}
 
+                    <div>
+                        <Button asChild>
+                            <Link href="/reset">Reset</Link>
+                        </Button>
+                    </div>
                     {isAllExperimentCompleted && <Button asChild>
                         <Link href="/results">View Results</Link>
                     </Button>}
+
+                    {!isAllExperimentCompleted && <Button disabled asChild>
+                        <Link href="#">View Results</Link>
+                    </Button>}
+
 
                 </ul>
             </div>

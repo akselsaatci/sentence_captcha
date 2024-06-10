@@ -3,6 +3,7 @@ import { ExperimentData } from "@/types/experiment_data"
 import { cookies } from "next/headers"
 import CaptchaForm from "@/components/CaptchaForm"
 import { revalidatePath } from "next/cache"
+import { grammerCheck, isCaptchaValid } from "@/lib/utils"
 export default function Experiment({ params }: { params: { slug: string } }) {
     const cookieStorage = cookies()
     const cookie = cookieStorage.get('experiment')
@@ -33,8 +34,8 @@ export default function Experiment({ params }: { params: { slug: string } }) {
         const accuracy = formData.get('accuracy')
         if (!captchaText) return
 
-        if (captchaText !== captcha) {
-            return
+        if (!isCaptchaValid(captchaText.toString(), captcha)) {
+            redirect(`/experiment/experiment-sentence/${index}?err=invalid-captcha`)
         }
 
 
