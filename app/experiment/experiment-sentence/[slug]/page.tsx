@@ -34,6 +34,8 @@ export default function Experiment({ params }: { params: { slug: string } }) {
         const accuracy = formData.get('accuracy')
         if (!captchaText) return
 
+    
+
         if (!isCaptchaValid(captchaText.toString(), captcha) || await grammerCheck(captchaText.toString()) == false) {
             redirect(`/experiment/experiment-sentence/${index}?err=invalid-captcha`)
         }
@@ -48,6 +50,7 @@ export default function Experiment({ params }: { params: { slug: string } }) {
                         isCompleted: true,
                         accuracy: accuracy,
                         time: time,
+                        userResponse: captchaText.toString(),   
                     }
                 }
                 return experiment

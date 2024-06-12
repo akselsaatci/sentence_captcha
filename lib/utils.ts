@@ -12,6 +12,7 @@ export function isCaptchaValid(input: String, captcha: String) {
     for (let char of captchaChars) {
         const index = inputChars.indexOf(char);
         if (index === -1) {
+            console.log('Character not found:', char);  
             return false;
         }
         inputChars.splice(index, 1);
@@ -22,12 +23,13 @@ export function isCaptchaValid(input: String, captcha: String) {
 
 //TODO implement this function
 export async function grammerCheck(sentence: String) {
+    return true;
     console.log('Checking grammar:', sentence);
     const url = 'http://localhost:1234/v1/chat/completions';
     const payload = {
         model: "lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF",
         messages: [
-            { role: "system", content: "You are an ai assistant that determines is the sentence is grammarely. You should only give answers as Good sentence or Bad sentence. You should only give answers such as good or bad nothing more. Also you should ignore white space errors and upper or lowercase errors" },
+            { role: "system", content: "You are an ai assistant that determines is the sentence is grammarely. You should only give answers as Good sentence or Bad sentence. You should only give answers such as good or bad nothing more. Also you should ignore white space errors and upper or lowercase errors. You don't have to be too much strict about it. You should only check if the word order is correct. Dont check for clarity and coherence." },
             { role: "user", content: sentence }
         ],
         temperature: 0.7,

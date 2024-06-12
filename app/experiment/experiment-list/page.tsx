@@ -9,6 +9,7 @@ export default async function ExperimentList() {
     const cookieStorage = cookies()
     const cookie = cookieStorage.get('experiment')
     const experimentData: ExperimentData = cookie ? JSON.parse(cookie.value) : null
+    console.log(experimentData, 'experimentData')
     const isAllExperimentCompleted = experimentData.experiments.every((experiment: Experiment) => experiment.isCompleted)
     if (!experimentData) {
         redirect('/')
@@ -28,7 +29,6 @@ export default async function ExperimentList() {
                             </Button>
                         </li>
                     ))}
-
                     <div>
                         <Button asChild>
                             <Link href="/reset">Reset</Link>

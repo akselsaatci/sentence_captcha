@@ -52,6 +52,7 @@ export default function Experiment({ params }: { params: { slug: string } }) {
                         isCompleted: true,
                         accuracy: accuracy,
                         time: time,
+                        userResponse: captchaText.toString(),   
                     }
                 }
                 return experiment

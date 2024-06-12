@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { ExperimentData } from '@/types/experiment_data'
+import { ExperimentData, Experiment } from '@/types/experiment_data'
+import { prisma } from '@/lib/db'
 export default function Home() {
     async function handleSubmit(formData: FormData) {
         'use server'
@@ -11,66 +12,33 @@ export default function Home() {
         if (!name) return
 
 
-        var experiment: ExperimentData = {
-            userName: name.toString(),
-            id: '0',
-            experiments: [
-                {
-                    captcha: 'hSdjvkJ',
-                    href: '/experiment/experiment-traditional/0',
-                    isTraditional: true,
-                    isCompleted: false,
-                    accuracy: undefined,
-                    time: undefined,
-                }
-                ,
-                {
-                    captcha: 'ttoes',
-                    href: '/experiment/experiment-sentence/1',
-                    isTraditional: false,
-                    isCompleted: false,
-                    accuracy: undefined,
-                    time: undefined,
-                },
-                {
-                    captcha: 'jdke82a',
-                    href: '/experiment/experiment-traditional/2',
-                    isTraditional: true,
-                    isCompleted: false,
-                    accuracy: undefined,
-                    time: undefined,
-                },
-                {
-                    captcha: 'tstrlgs',
-                    href: '/experiment/experiment-sentence/3',
-                    isTraditional: false,
-                    isCompleted: false,
-                    accuracy: undefined,
-                    time: undefined,
-                },
-                {
-                    captcha: 'aksd83f',
-                    href: '/experiment/experiment-traditional/4',
-                    isTraditional: true,
-                    isCompleted: false,
-                    accuracy: undefined,
-                    time: undefined,
-                },
-                {
-                    captcha: 'cudinsec',
-                    href: '/experiment/experiment-sentence/5',
-                    isTraditional: false,
-                    isCompleted: false,
-                    accuracy: undefined,
-                    time: undefined,
-                },
-            ]
+        const experiments = await prisma.standardExperiments.findMany({ where: { isActivated: true } })
+        var experimentArray: Experiment[] = []
+
+        experiments.map((experiment, index) => {
+            var experimentData: Experiment = {
+                id: experiment.id,
+                captcha: experiment.captcha,
+                href: experiment.href,
+                isTraditional: experiment.isTraditional,
+                isCompleted: false,
+                accuracy: undefined,
+                time: undefined,
+            }
+            experimentArray.push(experimentData)
+
         }
+        )
+        let experimentData: ExperimentData = {
+            userName: name.toString(),
+            experiments: experimentArray
+        }
+
 
         const cookieStore = cookies()
         cookieStore.set({
             name: 'experiment',
-            value: JSON.stringify(experiment),
+            value: JSON.stringify(experimentData),
         });
         return redirect('/experiment/experiment-list')
 
