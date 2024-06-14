@@ -1,76 +1,72 @@
 import { redirect } from "next/navigation"
-import { ExperimentData } from "@/types/experiment_data"
 import { cookies } from "next/headers"
 import CaptchaForm from "@/components/CaptchaForm"
 import { revalidatePath } from "next/cache"
 import { grammerCheck, isCaptchaValid } from "@/lib/utils"
-export default function Experiment({ params }: { params: { slug: string } }) {
-    const cookieStorage = cookies()
-    const cookie = cookieStorage.get('experiment')
-    const experimentData: ExperimentData = cookie ? JSON.parse(cookie.value) : null
-    if (!experimentData) {
-        redirect('/')
-
-    }
-    const index = parseInt(params.slug)
-    if (index >= experimentData.experiments.length) {
-        redirect('/')
-    }
-
-    const captcha = experimentData.experiments[index as number].captcha
-    if (!captcha) {
-        redirect('/')
-    }
-
-
-    async function handleSubmit(formData: FormData) {
-        "use server"
-        const captchaText = formData.get('captchaText')
-        const time = formData.get('time')
-        const cookieStorage = cookies()
-        const cookie = cookieStorage.get('experiment')
-        const experimentData: ExperimentData = cookie ? JSON.parse(cookie.value) : null
-        const name = experimentData.userName
-        const accuracy = formData.get('accuracy')
-        if (!captchaText) return
-
-        if (!isCaptchaValid(captchaText.toString(), captcha)) {
-            redirect(`/experiment/experiment-sentence/${index}?err=invalid-captcha`)
+import { prisma } from "@/lib/db"
+export default async function Experiment({ params }: { params: { slug: string } }) {
+    var captchasForExperiment = await prisma.traditionalCaptchaForExperiment.findMany({
+        where: {
+            experimentId: params.slug
         }
-
-
-        console.log(captchaText, time)
-        console.log(name)
-        console.log(accuracy)
-
-        const newExperimentData = {
-            ...experimentData,
-            experiments: experimentData.experiments.map((experiment, i) => {
-                if (i === index) {
-                    return {
-                        ...experiment,
-                        isCompleted: true,
-                        accuracy: accuracy,
-                        time: time,
-                        userResponse: captchaText.toString(),   
-                    }
-                }
-                return experiment
-            })
-        }
-        cookieStorage.set({
-            name: 'experiment',
-            value: JSON.stringify(newExperimentData),
+    })
+    var captchas = captchasForExperiment.map(async (value) => {
+        var captcha = await prisma.traditionalCaptchas.findUnique({
+            where: {
+                id: value.captchaId
+            }
         })
-        revalidatePath('/experiment/experiment-list')
-        redirect('/experiment/experiment-list')
+        return captcha?.captcha ? captcha.captcha : ""
+    })
+
+    var resolvedCaptchas = await Promise.all(captchas)
+    console.log(resolvedCaptchas, "resolved captchas")
+
+    if (!captchas) {
+        redirect('/')
+    }
+
+
+    async function handleSubmit(formData: FormData, userAnswers: string[]) {
+        "use server"
+
+        const accuracy = formData.get('accuracy')
+        var experiment = await prisma.experiment.findUnique({
+            where: {
+                id: params.slug
+            }
+        })
+        if (!experiment) {
+            redirect('/')
+        }
+
+        experiment.isCompleted = true
+        const mistakeCount = formData.get('mistakeCount')
+        const intMistakeCount = mistakeCount ? parseInt(mistakeCount.toString()) : 0
+
+        experiment.endTime = new Date()
+        experiment.accuracy = accuracy ? parseInt(accuracy.toString()) : 0
+        experiment.mistakeCount = intMistakeCount
+
+        await prisma.experiment.update({
+            where: {
+                id: experiment.id
+            },
+            data: {
+                isCompleted: true,
+                endTime: experiment.endTime,
+                accuracy: experiment.accuracy
+            }
+        })
+        return redirect('/experiment/experiment-list')
+
 
     }
 
 
     return (
         <div className="flex items-center justify-center h-screen">
-            <CaptchaForm captcha={captcha} isTraditional={true} handleSubmit={handleSubmit} />
+            <CaptchaForm captcha={resolvedCaptchas} isTraditional={true} handleSubmit={handleSubmit} />
         </div>
 
     )

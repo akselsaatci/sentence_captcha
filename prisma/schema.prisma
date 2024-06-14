@@ -1,50 +1,74 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
-  url      =  "file:./dev.db"
+  url      = "file:./dev.db"
 }
 
 model User {
-  id    String @id @default(uuid())
-  name  String
-  
-  // Relation to UserExperiment
-  experiments UserExperiment[]
+  id            String       @id @default(uuid())
+  name          String
+  experiments   Experiment[]
 }
 
-model StandardExperiments {
-  id          String @id @default(uuid())
-  captcha     String
-  isActivated Boolean
-  href        String
-  isTraditional Boolean 
-  // Relation to UserExperiment
-  experiments UserExperiment[]
-}
+model Experiment {
+  id              String                        @id @default(uuid())
+  userId          String
+  user            User                          @relation(fields: [userId], references: [id])
+  traditional     TraditionalCaptchaForExperiment[]
+  sentence        SentenceCaptchaForExperiment[]
+  accuracy        Float
+  startTime       DateTime
+  endTime         DateTime?
+  mistakeCount    Int
+  isTraditional   Boolean
+  isCompleted     Boolean
+  createdAt       DateTime                      @default(now())
+  order Int
 
-model UserExperiment {
-  id            String    @id @default(uuid())
-  userId        String
-  experimentId  String
-  accuracy      Float
-  timeTaken     Int
-  createdAt     DateTime  @default(now())
-  userResponse  String
-
-  // Relations
-  user          User      @relation(fields: [userId], references: [id])
-  experiment    StandardExperiments @relation(fields: [experimentId], references: [id])
-  
   @@index([userId])
-  @@index([experimentId])
+}
+
+model TraditionalCaptchaForExperiment {
+  id Int @id @default(autoincrement())
+  experimentId  String
+  experiment    Experiment   @relation(fields: [experimentId], references: [id])
+  captchaId    Int 
+  captcha       TraditionalCaptchas @relation(fields: [captchaId], references: [id])
+}
+
+model SentenceCaptchaForExperiment {
+    id Int @id @default(autoincrement())
+  experimentId  String
+  experiment    Experiment   @relation(fields: [experimentId], references: [id])
+  captchaId    Int 
+  captcha       SentenceCaptchas @relation(fields: [captchaId], references: [id])
+  userResponse String?
+}
+
+model TraditionalCaptchas {
+    id Int @id @default(autoincrement())
+
+  captcha     String
+  length      Int
+  experiments TraditionalCaptchaForExperiment[]
+}
+
+model SentenceCaptchas {
+    id Int @id @default(autoincrement())
+
+  captcha     String
+  language    Language         @relation(fields: [languageName], references: [name])
+  languageName String
+  length      Int
+  experiments SentenceCaptchaForExperiment[]
+}
+
+
+model Language {
+  name       String      @id
+  sentences  SentenceCaptchas[]
 }
 
