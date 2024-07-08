@@ -2,14 +2,14 @@
 import React, { useRef, useEffect } from "react";
 
 interface CaptchaImageProps {
-    captchaText: string;
-    isTraditional: boolean;
+captchaText: string;
+isTraditional: boolean;
 }
 
 export default function CaptchaImage(props: CaptchaImageProps) {
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-    const drawCaptchaOnCanvas = (ctx: CanvasRenderingContext2D, captcha: string) => {
+const drawCaptchaOnCanvas = (ctx: CanvasRenderingContext2D, captcha: string) => {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         const textColors = ['rgb(0,0,0)', 'rgb(130,130,130)'];
         const letterSpace = 150 / captcha.length;

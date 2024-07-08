@@ -15,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { NextResponse } from "next/server"
 export default function Home() {
     async function handleSubmit(formData: FormData) {
         'use server'
@@ -122,7 +123,9 @@ export default function Home() {
         const user = await prisma.user.create({
             data: {
                 id: randomUUID(),
+                startTime: new Date(),
                 name: name.toString(),
+                isItalian: formData.get('language') === '2' ? true : false
             }
         })
         let experiments: Experiment[] = []
@@ -148,26 +151,33 @@ export default function Home() {
                 }
             })
             experiments.push(experiment)
-            const captchas = task.traditional ?
-                await prisma.traditionalCaptchas.findMany({
-                    take: 5,
-                    skip: Math.floor(Math.random() * await prisma.traditionalCaptchas.count({
+            let captchas: any[] = []
+            try {
+                captchas = task.traditional ?
+                    await prisma.traditionalCaptchas.findMany({
+                        take: 5,
+                        skip: (Math.floor(Math.abs(Math.random()) * (await prisma.traditionalCaptchas.count({
+                            where: {
+                                length: task.length
+                            }
+                        }) - 5))),
                         where: {
+
                             length: task.length
                         }
-                    }) - 5),
-                    where: {
-
-                        length: task.length
-                    }
-                }) :
-                await prisma.sentenceCaptchas.findMany({
-                    take: 5,
-                    skip: Math.floor(Math.random() * await prisma.sentenceCaptchas.count({ where: { length: task.length } }) - 5),
-                    where: {
-                        length: task.length
-                    }
-                })
+                    }) :
+                    await prisma.sentenceCaptchas.findMany({
+                        take: 5,
+                        skip: Math.abs(Math.floor(Math.abs(Math.random()) * await prisma.sentenceCaptchas.count({ where: { length: task.length , languageName : user.isItalian ? 'Italian' : 'English' } }) - 5)),
+                        where: {
+                            length: task.length,
+                            languageName: user.isItalian ? 'Italian' : 'English'
+                        }
+                    })
+            } catch (error) {
+                return NextResponse.redirect('http://localhost:3000/')
+            }
+            if (!captchas || captchas.length != 5) { return NextResponse.redirect('http://localhost:3000/') }
 
             captchas.forEach(async (captcha) => {
                 if (task.traditional) {
@@ -177,7 +187,6 @@ export default function Home() {
                             experimentId: experiment.id,
                         }
                     })
-                    console.log("traditional")
                 } else {
                     await prisma.sentenceCaptchaForExperiment.create({
                         data: {
@@ -185,7 +194,6 @@ export default function Home() {
                             experimentId: experiment.id,
                         }
                     })
-                    console.log("sentence")
                 }
             })
         })
@@ -214,8 +222,8 @@ export default function Home() {
                         </div>
 
                         <div className="flex w-full items-center space-x-2">
-                            <Select name="per_number">
-                                <SelectTrigger className="w-[180px]">
+                            <Select name="per_number" required>
+                                <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Percipient number" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -237,6 +245,24 @@ export default function Home() {
                                 </SelectContent>
                             </Select>
                         </div>
+
+
+                        <div className="flex w-full items-center space-x-2">
+                            <Select name="language" required>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Language" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>Language</SelectLabel>
+                                        <SelectItem value="1">English</SelectItem>
+                                        <SelectItem value="2">Italian</SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+
                     </CardContent>
                     <CardFooter>
                         <Button type="submit" className="w-full">Start</Button>

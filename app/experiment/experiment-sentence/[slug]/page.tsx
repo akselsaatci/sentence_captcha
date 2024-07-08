@@ -1,9 +1,6 @@
 import React from "react"
 import CaptchaForm from "@/components/CaptchaForm"
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
-import { grammerCheck, isCaptchaValid } from "@/lib/utils"
-import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/db"
 export default async function Experiment({ params }: { params: { slug: string } }) {
 
@@ -30,9 +27,11 @@ export default async function Experiment({ params }: { params: { slug: string } 
     }
 
 
-    async function handleSubmit(formData: FormData, userAnswers: string[]) {
+    async function handleSubmit(formData: FormData, userAnswers: string[], notSolved: number[], captchaTimes: number[]) {
         "use server"
         const accuracy = formData.get('accuracy')
+        const totalMistakeCount = formData.get('totalMistakeCount')
+
         var experiment = await prisma.experiment.findUnique({
             where: {
                 id: params.slug
@@ -43,12 +42,29 @@ export default async function Experiment({ params }: { params: { slug: string } 
         }
 
         experiment.isCompleted = true
-        const mistakeCount = formData.get('mistakeCount')
-        const intMistakeCount = mistakeCount ? parseInt(mistakeCount.toString()) : 0
+        const intMistakeCount = totalMistakeCount ? parseInt(totalMistakeCount.toString()) : 0
+        const startTime = formData.get('startTime')?.toString() ?? "0"
+
 
         experiment.endTime = new Date()
         experiment.accuracy = accuracy ? parseInt(accuracy.toString()) : 0
         experiment.mistakeCount = intMistakeCount
+        experiment.startTime = new Date(parseInt(startTime))
+
+
+        await prisma.experiment.update({
+            where: {
+                id: experiment.id
+            },
+            data: {
+                isCompleted: true,
+                endTime: experiment.endTime,
+                accuracy: experiment.accuracy,
+                startTime: experiment.startTime,
+                mistakeCount: experiment.mistakeCount,
+
+            }
+        })
 
 
         var captchasForExperiment = await prisma.sentenceCaptchaForExperiment.findMany({
@@ -56,10 +72,10 @@ export default async function Experiment({ params }: { params: { slug: string } 
                 experimentId: params.slug
             }
         })
-        var captchas = captchasForExperiment.map(async (value) => {
+        var captchas = captchasForExperiment.map(async (value, index) => {
             var captcha = await prisma.sentenceCaptchas.findUnique({
                 where: {
-                    id: value.captchaId
+                    id: value.captchaId,
                 }
             })
             return captcha?.captcha ? captcha.captcha : ""
@@ -74,11 +90,17 @@ export default async function Experiment({ params }: { params: { slug: string } 
                     id: captchasForExperiment[index].id
                 },
                 data: {
-                    userResponse: userAnswers[index]
+                    userResponse: userAnswers[index],
+                    isSolved: index in notSolved ? false : true,
+                    timeSpend: captchaTimes[index] ?? 0,
+
+
+
                 }
             })
         })
 
+        console.log("times", captchaTimes)
 
 
         await prisma.experiment.update({
@@ -98,7 +120,7 @@ export default async function Experiment({ params }: { params: { slug: string } 
 
     return (
         <div className="flex items-center justify-center h-screen">
-            <CaptchaForm captcha={resolvedCaptchas} isTraditional={false} handleSubmit={handleSubmit} />
+            <CaptchaForm captchas={resolvedCaptchas} isTraditional={false} handleSubmit={handleSubmit} experimentId={params.slug} />
         </div>
 
     )

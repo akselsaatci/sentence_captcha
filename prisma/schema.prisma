@@ -11,6 +11,9 @@ model User {
   id            String       @id @default(uuid())
   name          String
   experiments   Experiment[]
+  startTime    DateTime
+  endTime      DateTime?
+  isItalian Boolean @default(false)
 }
 
 model Experiment {
@@ -27,6 +30,7 @@ model Experiment {
   isCompleted     Boolean
   createdAt       DateTime                      @default(now())
   order Int
+  succesRate Float?  
 
   @@index([userId])
 }
@@ -37,6 +41,7 @@ model TraditionalCaptchaForExperiment {
   experiment    Experiment   @relation(fields: [experimentId], references: [id])
   captchaId    Int 
   captcha       TraditionalCaptchas @relation(fields: [captchaId], references: [id])
+  timeSpend Int?
 }
 
 model SentenceCaptchaForExperiment {
@@ -46,6 +51,8 @@ model SentenceCaptchaForExperiment {
   captchaId    Int 
   captcha       SentenceCaptchas @relation(fields: [captchaId], references: [id])
   userResponse String?
+  isSolved Boolean @default(false)
+  timeSpend Int?
 }
 
 model TraditionalCaptchas {
@@ -72,3 +79,12 @@ model Language {
   sentences  SentenceCaptchas[]
 }
 
+model ErrorLogs {
+  id Int @id @default(autoincrement())
+  captcha String
+  userResponse String
+  errorType String
+  createdAt DateTime @default(now())
+  userId String?
+  experimentId String?
+}

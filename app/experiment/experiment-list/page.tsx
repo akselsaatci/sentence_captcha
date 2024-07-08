@@ -25,6 +25,34 @@ export default async function ExperimentList() {
 
         }]
     })
+
+    var captchas: any[] = []
+
+    let captchaCount = 0
+
+
+    for (let i = 0; i < experiments.length; i++) {
+        if (experiments[i].isTraditional) {
+            var captchasForExperiment = await prisma.traditionalCaptchaForExperiment.findMany({
+                where: {
+                    experimentId: experiments[i].id
+                }
+            })
+            var captchasForExperimentData = captchasForExperiment.map(async (value) => {
+                var captcha = await prisma.traditionalCaptchas.findUnique({
+                    where: {
+                        id: value.captchaId
+                    }
+                })
+                return captcha?.captcha ? captcha.captcha : ""
+            })
+            var resolvedCaptchas = await Promise.all(captchasForExperimentData)
+            captchaCount += resolvedCaptchas.length
+        }
+    }
+
+
+
     console.log(experiments.length, "experiments")
 
     var isAllExperimentCompleted = experiments.every((experiment) => experiment.isCompleted)
@@ -48,7 +76,19 @@ export default async function ExperimentList() {
                         })
                     }
                 </ul>
+                {captchaCount < 15 && <p className="text-sm text-red-500">Captchas Missing </p>}
+
             </div >
+            {
+                isAllExperimentCompleted && <div className="w-full max-w-md text-center">
+                    <h1 className="text-2xl font-bold mb-4">All Experiments Completed</h1>
+                    <Button asChild>
+                        <Link href="/end">
+                            End Experiment
+                        </Link>
+                    </Button>
+                </div>
+            }
         </div >)
 }
 export const dynamic = 'force-dynamic'

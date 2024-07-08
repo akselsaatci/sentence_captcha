@@ -21,6 +21,10 @@ export function isCaptchaValid(input: String, captcha: String) {
     return true;
 };
 
+type grammerResult = {
+    score: number
+}
+
 //TODO implement this function
 export async function grammerCheck(sentence: String) {
     console.log('Checking grammar:', sentence);
@@ -28,7 +32,7 @@ export async function grammerCheck(sentence: String) {
     const payload = {
         model: "lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF",
         messages: [
-            { role: "system", content: "You are an AI assistant that determines if a sentence is grammatically correct.Sentences can be lack of main clause or verb you can ignore it. You should only respond with Good sentence or Bad sentence if it is bad you should also tell why is it bad.You should not consider aspects like correct tense ext. Ignore whitespace errors.Ignore upper or lowercase errors.Focus solely on the correctness of word order.You should ignore stractural errors in the sentence.Go easy while checking.If it makes a little bit of sense it is a good sentence Do not check for clarity and coherence." },
+            { role: "system", content: 'You are an AI assistant that determines if a sentence is only grammatically correct. Just look for grammer. You should only respond with a score between 0 and hundred.0 is bad and 100 is good.Your respond interface is {"score" : 80}. Ignore whitespace errors.Ignore upper or lowercase errors.Focus solely on the correctness of word order.You should ignore stractural errors in the sentence.Go easy while checking.If it makes a little bit of sense it is a good sentence Do not check for clarity and coherence.' },
             { role: "user", content: sentence }
         ],
         temperature: 0.7,
@@ -51,7 +55,8 @@ export async function grammerCheck(sentence: String) {
 
         const result = await response.json();
         console.log(result.choices[0].message);
-        if(result.choices[0].message.content.toLowerCase().includes('good')){
+        const scoreJson: grammerResult = await JSON.parse(result.choices[0].message.content);
+        if (scoreJson.score >= 60) {
             return true;
         }
         return false
@@ -62,3 +67,8 @@ export async function grammerCheck(sentence: String) {
     }
 }
 
+
+
+export async function logError(captcha: string, userResponse: string, errorType: string, experimentId: string, userId: string) {
+    await fetch('/logError', { 'method': 'POST', 'body': JSON.stringify({ 'captcha': captcha, 'userResponse': userResponse, 'errorType': errorType, 'experimentId': experimentId, 'userId': userId }) });
+}

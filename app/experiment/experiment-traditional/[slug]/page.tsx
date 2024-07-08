@@ -27,10 +27,11 @@ export default async function Experiment({ params }: { params: { slug: string } 
     }
 
 
-    async function handleSubmit(formData: FormData, userAnswers: string[]) {
+    async function handleSubmit(formData: FormData, userAnswers: string[], notSolved: number[], captchaTimes: number[]) {
         "use server"
 
         const accuracy = formData.get('accuracy')
+        const totalMistakeCount = formData.get('totalMistakeCount')
         var experiment = await prisma.experiment.findUnique({
             where: {
                 id: params.slug
@@ -41,12 +42,15 @@ export default async function Experiment({ params }: { params: { slug: string } 
         }
 
         experiment.isCompleted = true
-        const mistakeCount = formData.get('mistakeCount')
-        const intMistakeCount = mistakeCount ? parseInt(mistakeCount.toString()) : 0
+        const intMistakeCount = totalMistakeCount ? parseInt(totalMistakeCount.toString()) : 0
+        const startTime = formData.get('startTime')?.toString() ?? "0"
 
         experiment.endTime = new Date()
         experiment.accuracy = accuracy ? parseInt(accuracy.toString()) : 0
         experiment.mistakeCount = intMistakeCount
+        experiment.startTime = new Date(parseInt(startTime))
+        console.log(captchaTimes, "times")
+        console.log(intMistakeCount, "mist count")
 
         await prisma.experiment.update({
             where: {
@@ -55,9 +59,45 @@ export default async function Experiment({ params }: { params: { slug: string } 
             data: {
                 isCompleted: true,
                 endTime: experiment.endTime,
-                accuracy: experiment.accuracy
+                accuracy: experiment.accuracy,
+                mistakeCount: experiment.mistakeCount,
             }
         })
+
+
+        var captchasForExperiment = await prisma.traditionalCaptchaForExperiment.findMany({
+            where: {
+                experimentId: params.slug
+            }
+        })
+        var captchas = captchasForExperiment.map(async (value, index) => {
+            var captcha = await prisma.traditionalCaptchas.findUnique({
+                where: {
+                    id: value.captchaId,
+                }
+            })
+            return captcha?.captcha ? captcha.captcha : ""
+
+        })
+
+        var resolvedCaptchas = await Promise.all(captchas)
+
+        resolvedCaptchas.forEach(async (captcha, index) => {
+            await prisma.traditionalCaptchaForExperiment.update({
+                where: {
+                    id: captchasForExperiment[index].id
+                },
+                data: {
+                    timeSpend: captchaTimes[index] ?? 0
+
+
+                }
+            })
+        })
+
+
+
+
         return redirect('/experiment/experiment-list')
 
 
@@ -66,7 +106,7 @@ export default async function Experiment({ params }: { params: { slug: string } 
 
     return (
         <div className="flex items-center justify-center h-screen">
-            <CaptchaForm captcha={resolvedCaptchas} isTraditional={true} handleSubmit={handleSubmit} />
+            <CaptchaForm captchas={resolvedCaptchas} isTraditional={true} handleSubmit={handleSubmit} experimentId={params.slug} />
         </div>
 
     )
